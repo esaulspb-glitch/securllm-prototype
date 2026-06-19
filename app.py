@@ -4,9 +4,22 @@ from gigachat import GigaChat
 
 st.set_page_config(page_title="SecurLLM", layout="centered")
 
-# --- КАСТОМНЫЙ CSS (фирменный стиль Сбера) ---
+# --- КАСТОМНЫЙ CSS (фирменный стиль Сбера + исправленные отступы) ---
 st.markdown("""
 <style>
+    /* Скрываем стандартный хедер Streamlit */
+    header {
+        display: none !important;
+    }
+    /* Убираем верхний отступ у main */
+    .main > div {
+        padding-top: 0 !important;
+    }
+    /* Увеличиваем отступ контейнера */
+    .block-container {
+        padding-top: 2.5rem !important;
+        padding-bottom: 2rem !important;
+    }
     /* Основные цвета Сбера */
     :root {
         --sber-green: #1A991A;
@@ -50,7 +63,7 @@ st.markdown("""
         box-shadow: 0 0 0 2px rgba(26, 153, 26, 0.2) !important;
     }
 
-    /* Кнопка — зелёная, как в интерфейсах Сбера */
+    /* Кнопка — зелёная */
     .stButton button {
         background-color: var(--sber-green) !important;
         color: #FFFFFF !important;
@@ -84,17 +97,17 @@ st.markdown("""
         border-color: #d0d7de !important;
     }
 
-    /* Убираем лишние отступы */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
+    /* Дополнительный отступ для шапки */
+    .sber-header {
+        margin-top: 0.5rem;
+        margin-bottom: 1.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- ШАПКА С ЛОГОТИПОМ СБЕРА (стилизованный) ---
+# --- ШАПКА С ЛОГОТИПОМ СБЕРА (с отступом) ---
 st.markdown("""
-    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #d0d7de;">
+    <div class="sber-header" style="display: flex; align-items: center; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid #d0d7de;">
         <div style="display: flex; align-items: center; gap: 6px;">
             <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0054A6, #FDB913, #1A991A); display: flex; align-items: center; justify-content: center;">
                 <span style="color: white; font-size: 20px; font-weight: 700;">✓</span>
@@ -116,7 +129,6 @@ except Exception:
     st.stop()
 
 # --- СПИСОК ТИПОВЫХ ПОМЕЩЕНИЙ ---
-# Добавляем пустой элемент в начало списка
 room_options = {
     "": "— Выберите типовое помещение —",
     "Кабинет генерального директора": "Кабинет руководителя, сейф для документов, переговорная зона.",
@@ -128,7 +140,7 @@ room_options = {
     "Туалет / подсобка": "Подсобное помещение, минимальная ценность активов."
 }
 
-# --- ИНТЕРФЕЙС: ДВЕ КОЛОНКИ (выпадающий список + ручной ввод) ---
+# --- ИНТЕРФЕЙС: ДВЕ КОЛОНКИ ---
 col1, col2 = st.columns(2)
 
 with col1:
@@ -150,9 +162,8 @@ with col2:
         label_visibility="collapsed"
     )
 
-# --- КНОПКА "ПОЛУЧИТЬ РЕКОМЕНДАЦИЮ" ---
+# --- КНОПКА ---
 if st.button("Получить рекомендацию", type="primary", use_container_width=True):
-    # Определяем, что использовать: выбранное типовое или ручной ввод
     if manual_input.strip():
         room_desc = manual_input.strip()
     elif selected_key:
@@ -198,20 +209,19 @@ if st.button("Получить рекомендацию", type="primary", use_co
                     response = client.chat(prompt)
                     raw = response.choices[0].message.content
 
-                    # Парсим структурированный ответ
                     zone_match = re.search(r"\*\*Категория \(Зона\):\*\*\s*(.+)", raw)
                     rec_match = re.search(r"\*\*Рекомендуемый состав ИТСО:\*\*\s*(.+)", raw)
                     just_match = re.search(r"\*\*Обоснование:\*\*\s*(.+)", raw)
 
                     if zone_match and rec_match and just_match:
                         st.success("✅ Рекомендация готова")
-                        col1, col2 = st.columns(2)
-                        with col1:
+                        c1, c2 = st.columns(2)
+                        with c1:
                             st.markdown("**📌 Категория (Зона)**")
                             st.info(zone_match.group(1))
                             st.markdown("**🛠️ Рекомендуемый состав ИТСО**")
                             st.success(rec_match.group(1))
-                        with col2:
+                        with c2:
                             st.markdown("**📋 Обоснование**")
                             st.write(just_match.group(1))
                     else:

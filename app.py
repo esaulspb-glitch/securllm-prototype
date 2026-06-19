@@ -2,79 +2,110 @@ import streamlit as st
 import re
 from gigachat import GigaChat
 
-st.set_page_config(page_title="SecurLLM — прототип", layout="centered")
+st.set_page_config(page_title="SecurLLM", layout="centered")
 
-# --- ТЁМНЫЙ CSS (как на лендинге) ---
+# --- КАСТОМНЫЙ CSS (фирменный стиль Сбера) ---
 st.markdown("""
 <style>
+    /* Основные цвета Сбера */
+    :root {
+        --sber-green: #1A991A;
+        --sber-dark: #333F48;
+        --sber-bg: #FFFFFF;
+        --sber-gray: #EEF3FF;
+        --sber-text: #333F48;
+    }
+
     /* Общий фон */
     .stApp {
-        background-color: #0b1115;
-        color: #e0e9ee;
+        background-color: var(--sber-bg);
     }
     .main > div {
-        background-color: #0b1115;
+        background-color: var(--sber-bg);
     }
-    /* Заголовки */
+
+    /* Заголовки — графитовый */
     h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        color: #ffffff !important;
+        color: var(--sber-dark) !important;
+        font-family: 'Inter', 'Arial', sans-serif;
+        font-weight: 600;
     }
+
+    /* Основной текст */
+    .stMarkdown, .stText, label, .stSelectbox label, .stTextArea label {
+        color: var(--sber-dark) !important;
+        font-family: 'Inter', 'Arial', sans-serif;
+    }
+
     /* Поля ввода и выпадающие списки */
     .stTextArea textarea, .stSelectbox div, .stButton button {
-        background-color: #111e1e !important;
-        color: #e0e9ee !important;
-        border: 1px solid #2a4a3a !important;
+        background-color: var(--sber-gray) !important;
+        color: var(--sber-dark) !important;
+        border: 1px solid #d0d7de !important;
         border-radius: 8px !important;
+        font-family: 'Inter', 'Arial', sans-serif;
     }
-    .stSelectbox div {
-        background-color: #111e1e !important;
+    .stTextArea textarea:focus, .stSelectbox div:focus {
+        border-color: var(--sber-green) !important;
+        box-shadow: 0 0 0 2px rgba(26, 153, 26, 0.2) !important;
     }
-    /* Кнопка */
+
+    /* Кнопка — зелёная, как в интерфейсах Сбера */
     .stButton button {
-        background-color: transparent !important;
-        border: 1px solid #80c9b0 !important;
-        color: #80c9b0 !important;
+        background-color: var(--sber-green) !important;
+        color: #FFFFFF !important;
+        border: none !important;
         font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 8px !important;
         transition: 0.2s;
         width: 100%;
     }
     .stButton button:hover {
-        background-color: #162424 !important;
-        box-shadow: 0 0 12px rgba(120, 200, 160, 0.1);
+        background-color: #0f7a0f !important;
+        box-shadow: 0 4px 12px rgba(26, 153, 26, 0.3);
     }
+
     /* Блоки вывода */
     .stAlert, .stInfo, .stSuccess, .stWarning {
-        background-color: #111e1e !important;
-        border: 1px solid #2a4a3a !important;
-        color: #b0c9d4 !important;
+        background-color: var(--sber-gray) !important;
+        border: 1px solid #d0d7de !important;
+        color: var(--sber-dark) !important;
         border-radius: 8px !important;
+        font-family: 'Inter', 'Arial', sans-serif;
     }
-    .stAlert { border-left: 3px solid #80c9b0 !important; }
-    .stInfo { border-left: 3px solid #2dd4bf !important; }
-    .stSuccess { border-left: 3px solid #80c9b0 !important; }
-    .stWarning { border-left: 3px solid #f59e0b !important; }
-    /* Метки */
-    .stMarkdown label {
-        color: #b0c9d4 !important;
-    }
+    .stAlert { border-left: 4px solid var(--sber-green) !important; }
+    .stInfo { border-left: 4px solid #2d7b2d !important; }
+    .stSuccess { border-left: 4px solid var(--sber-green) !important; }
+    .stWarning { border-left: 4px solid #f5a623 !important; }
+
     /* Разделитель */
     hr {
-        border-color: #1a2a2a !important;
+        border-color: #d0d7de !important;
+    }
+
+    /* Убираем лишние отступы */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- ШАПКА С ЛОГОТИПОМ СБЕРА ---
+# --- ШАПКА С ЛОГОТИПОМ СБЕРА (стилизованный) ---
 st.markdown("""
-    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-        <i class="fas fa-building-columns" style="font-size: 28px; color: #21a038;"></i>
-        <span style="font-size: 24px; font-weight: 600; color: #21a038;">СБЕР</span>
-        <span style="font-size: 18px; color: #b0c9d4;">| SecurLLM</span>
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #d0d7de;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0054A6, #FDB913, #1A991A); display: flex; align-items: center; justify-content: center;">
+                <span style="color: white; font-size: 20px; font-weight: 700;">✓</span>
+            </div>
+            <span style="font-size: 24px; font-weight: 700; color: #1A991A; letter-spacing: -0.5px;">Сбер</span>
+        </div>
+        <span style="font-size: 18px; color: #333F48; font-weight: 300;">| SecurLLM</span>
     </div>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 """, unsafe_allow_html=True)
 
-st.title("🏦 Методология оснащения ИТСО")
+st.title("Методология оснащения ИТСО")
 st.markdown("_Интеллектуальная классификация помещений на основе GigaChat_")
 
 # --- ПРОВЕРКА СЕКРЕТА ---
@@ -85,33 +116,49 @@ except Exception:
     st.stop()
 
 # --- СПИСОК ТИПОВЫХ ПОМЕЩЕНИЙ ---
-room_types = {
+# Добавляем пустой элемент в начало списка
+room_options = {
+    "": "— Выберите типовое помещение —",
     "Кабинет генерального директора": "Кабинет руководителя, сейф для документов, переговорная зона.",
     "Операционный зал": "Зал обслуживания клиентов, 4 кассы, работа с наличными и безналом.",
     "Кассовый узел": "Кассовая комната, 2 кассы, сейф для денег, работа с наличными.",
     "Серверная (ЦОД)": "Серверная стойка, 5 серверов, система охлаждения, круглосуточный доступ.",
     "Хранилище ценностей": "Сейфовая комната, металлические сейфы, система климат-контроля.",
-    "ИТ-отдел": "Рабочие места программистов, сетевое оборудование, доступ в серверную."
+    "ИТ-отдел": "Рабочие места программистов, сетевое оборудование, доступ в серверную.",
+    "Туалет / подсобка": "Подсобное помещение, минимальная ценность активов."
 }
 
 # --- ИНТЕРФЕЙС: ДВЕ КОЛОНКИ (выпадающий список + ручной ввод) ---
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("**📋 Выберите типовое помещение**")
-    selected = st.selectbox("", list(room_types.keys()), index=0, label_visibility="collapsed")
+    st.markdown("**Выберите типовое помещение**")
+    selected_key = st.selectbox(
+        "",
+        options=list(room_options.keys()),
+        format_func=lambda x: room_options[x] if x else "",
+        index=0,
+        label_visibility="collapsed"
+    )
 
 with col2:
-    st.markdown("**✏️ Или введите своё описание**")
-    manual_input = st.text_area("", height=68, placeholder="Например: переговорная комната на 10 человек", label_visibility="collapsed")
+    st.markdown("**Или введите своё описание**")
+    manual_input = st.text_area(
+        "",
+        height=68,
+        placeholder="Например: переговорная комната на 10 человек",
+        label_visibility="collapsed"
+    )
 
 # --- КНОПКА "ПОЛУЧИТЬ РЕКОМЕНДАЦИЮ" ---
 if st.button("Получить рекомендацию", type="primary", use_container_width=True):
     # Определяем, что использовать: выбранное типовое или ручной ввод
     if manual_input.strip():
         room_desc = manual_input.strip()
+    elif selected_key:
+        room_desc = room_options[selected_key] + f" (Тип: {selected_key})"
     else:
-        room_desc = room_types[selected] + f" (Тип: {selected})"
+        room_desc = ""
 
     if not room_desc.strip():
         st.warning("⚠️ Выберите типовое помещение или введите описание вручную.")
